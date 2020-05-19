@@ -1,7 +1,5 @@
 package org.jbpm.cucumber;
 
-import static org.junit.Assert.assertNotNull;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

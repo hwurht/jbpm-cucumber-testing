@@ -7,7 +7,7 @@ import io.cucumber.junit.CucumberOptions;
 
 @RunWith(Cucumber.class)
 @CucumberOptions (
-    features = "src/test/java/org/jbpm/cucumber/features", 
+    features = "src/test/resources/features", 
     glue = "org.jbpm.cucumber"
 )
 public class RunCucumberTest {
