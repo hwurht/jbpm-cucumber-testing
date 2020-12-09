@@ -1,8 +1,10 @@
 package org.jbpm.cucumber;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.HashMap;
 import java.util.List;
 
 import io.cucumber.java.After;
@@ -74,5 +76,35 @@ public class DefaultStepDefinitions {
         assertNotNull(testUtil.getProcessInstance());
         testUtil.assertProcessInstanceCompleted(testUtil.getProcessInstance().getId());
     }
+    
+    // tasks
+    @When("user {string} completes the human task {string}")
+    public void completeHumanTask (String userId, String taskName) {
+        assertNotNull(testUtil.getProcessInstance());
+        assertEquals(true, testUtil.completeHumanTask(taskName, userId, new HashMap<>()));
+    }
 
+    @Then("user {string} can claim the human task {string}")
+    public void isHumanTaskClaimableByTrue (String userId, String taskName) {
+        assertNotNull(testUtil.getProcessInstance());
+        assertEquals(true, testUtil.isHumanTaskClaimableBy(taskName, userId));
+    }
+
+    @Then("user {string} cannot claim the human task {string}")
+    public void isHumanTaskClaimableByFalse (String userId, String taskName) {
+        assertNotNull(testUtil.getProcessInstance());
+        assertEquals(false, testUtil.isHumanTaskClaimableBy(taskName, userId));
+    }
+
+    @Then("user {string} is assigned the human task {string}")
+    public void isHumanTaskAssignedToTrue (String userId, String taskName) {
+        assertNotNull(testUtil.getProcessInstance());
+        assertEquals(true, testUtil.isHumanTaskAssignedTo(taskName, userId));
+    }
+
+    @Then("user {string} is not assigned the human task {string}")
+    public void isHumanTaskAssignedToFalse (String userId, String taskName) {
+        assertNotNull(testUtil.getProcessInstance());
+        assertEquals(false, testUtil.isHumanTaskAssignedTo(taskName, userId));
+    }
 }

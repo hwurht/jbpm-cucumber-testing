@@ -11,29 +11,35 @@ import org.kie.api.runtime.KieSession;
 import org.kie.api.runtime.manager.RuntimeEngine;
 import org.kie.api.runtime.manager.RuntimeManager;
 import org.kie.api.runtime.process.ProcessInstance;
+import org.kie.api.task.TaskService;
+import org.kie.api.task.model.Status;
+import org.kie.api.task.model.TaskSummary;
 import org.kie.internal.runtime.manager.context.EmptyContext;
 
-public class JbpmTestUtil extends JbpmJUnitBaseTestCase{
+public class JbpmTestUtil extends JbpmJUnitBaseTestCase {
     private RuntimeManager runtimeManager;
     private RuntimeEngine runtimeEngine;
     private KieSession kieSession;
     private ProcessInstance processInstance;
     private String processId;
 
+    private TaskService taskService;
+
     private Map<String, Object> processParams = new HashMap<>();
-    
-    public JbpmTestUtil () {
+
+    public JbpmTestUtil() {
         super(true, true);
     }
-    
-    public void initialize (List<String> bpmnFiles) {
+
+    public void initialize(List<String> bpmnFiles) {
         runtimeManager = createRuntimeManager(bpmnFiles.toArray(new String[bpmnFiles.size()]));
         runtimeEngine = getRuntimeEngine(EmptyContext.get());
         if (runtimeEngine != null) {
             kieSession = runtimeEngine.getKieSession();
+            taskService = runtimeEngine.getTaskService();
         }
     }
-    
+
     public boolean useProcessDefinition(String processId) {
         this.processId = processId;
         if (kieSession == null) {
@@ -49,13 +55,13 @@ public class JbpmTestUtil extends JbpmJUnitBaseTestCase{
         }
         return true;
     }
-    
-    public void startProcess () {
+
+    public void startProcess() {
         if (kieSession != null && processId != null) {
             processInstance = kieSession.startProcess(processId, processParams);
         }
     }
-    
+
     public RuntimeManager getRuntimeManager() {
         return runtimeManager;
     }
@@ -103,9 +109,47 @@ public class JbpmTestUtil extends JbpmJUnitBaseTestCase{
     public void setProcessParams(Map<String, Object> processParams) {
         this.processParams = processParams;
     }
-    
-    public void addProcessParam (String name, Object value) {
+
+    public void addProcessParam(String name, Object value) {
         this.processParams.putIfAbsent(name, value);
     }
     
+    // tasks
+    public boolean isHumanTaskAssignedTo (String taskName, String userId) {
+        return hasHumanTaskStatus(taskName, userId, Status.Reserved);
+    }
+
+    public boolean isHumanTaskClaimableBy (String taskName, String userId) {
+        return hasHumanTaskStatus(taskName, userId, Status.Ready);
+    }
+
+    public boolean isHumanTaskStarted (String taskName, String userId) {
+        return hasHumanTaskStatus(taskName, userId, Status.InProgress);
+    }
+    
+    public boolean completeHumanTask (String taskName, String userId, Map<String, Object> data) {
+        List<TaskSummary> tasks = taskService.getTasksAssignedAsPotentialOwner(userId, "en-UK");
+        TaskSummary found = tasks.stream().filter(task -> task.getName().equals(taskName)).findAny().orElse(null);
+        if (found != null) {
+            switch (found.getStatus()) {
+                case Ready:
+                    taskService.claim(found.getId(), userId);
+                case Reserved:
+                    taskService.start(found.getId(), userId);
+                case InProgress:
+                    taskService.complete(found.getId(), userId, data);
+                    return true;
+                default:
+                    return false;
+            }
+        }
+        return false;
+    }
+    
+    private boolean hasHumanTaskStatus (String taskName, String userId, Status status) {
+        List<TaskSummary> tasks = taskService.getTasksAssignedAsPotentialOwner(userId, "en-UK");
+        TaskSummary found = tasks.stream().filter(task -> task.getName().equals(taskName)).findAny().orElse(null);
+        return found != null ? found.getStatus() == status : false;
+    }
+
 }
